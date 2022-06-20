@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  8
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     MPPICFoam;
+
+startFrom       startTime;		//the simulation starts from the first timestep
+
+startTime       0.0;
+
+stopAt          endTime;
+
+endTime         0.05;			//we stop after 0.05s
+
+deltaT          1e-4;			//initial time step size
+
+writeControl    adjustableRunTime;	//simulation can automatically adjust the time step according to the courant number
+	
+writeInterval   0.001;			//we write every 0.001s
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;			//adjustableRunTime can modify the time step size
+
+maxCo		1;			//maximum value for COurant NUmber
+maxAlphaCo	1;			//maximum value for COurant number of the interface water/air
+
+maxDeltaT	1e-3;			//maximum time step
+
+functions
+   {
+   #includeFunc residuals		//include function to postProcess the residuals
+   }
+
+// ************************************************************************* //

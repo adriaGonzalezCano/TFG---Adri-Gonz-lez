@@ -1,0 +1,189 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  8
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      particleProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    active          true; 		//true for particle adding
+    coupled         true; 		//true for the influence of parcels to the continous phase
+    transient       yes; 		//true for transient simulation
+    cellValueSourceCorrection on; 	//correction of cell values with the Lagrangian time step
+
+    interpolationSchemes 		//interpolation schemes for continuous fields
+    {
+        rho.air         cell;
+        U.air           cellPoint;
+        mu.air          cell;
+        alpha.air       cell;
+    }
+
+    averagingMethod basic;
+
+    integrationSchemes 		//definition of intergation schemes of velocity field U
+    {
+        U               Euler;
+    }
+
+    sourceTerms 			//scheme for source term in momentum equation of continuous phase, relevant if coupled is activated
+    {
+        schemes
+        {
+            U semiImplicit 1;
+        }
+    }
+}
+
+constantProperties 			//density and max fraction of particles
+{
+    rho0            1000; 		//Water density 1000 kg/m³
+
+    alphaMax        0.9;
+}
+
+subModels 				//particular particle properties definition
+{
+    particleForces 			//particle drag modelling
+    {
+    	gravity;			//gravity force model
+        WenYuDrag 			//drag model suitable for moderate density of particles
+        {
+            alphac alpha.air;
+        }
+    }
+
+    injectionModels 			//method of particle injection
+    {
+        model1
+        {
+            type            patchInjection; 	//for injection at the patch
+            parcelBasisType fixed; 		//parcel basis enumeration
+            patchName       lowerInlet; 	//name of the patch for particle injection
+            U0              (28.28427 28.28427 0); 	//entering velocity of particles (cos(angle),sin(angle),0)
+            nParticle       1; 			//number of particles per parcel
+            parcelsPerSecond 1000000; 		//number of particles per second
+            sizeDistribution 				//size of particles
+            {
+                type        normal; 			// particles have normal size distribution
+                normalDistribution 			//definition of normal distribution function by setting expectation, variance, minValue and maxValue
+                {
+                    expectation 600e-6;
+                    variance 100e-6;
+                    minValue 200e-6;
+                    maxValue 900e-6;
+                }
+            }
+            flowRateProfile constant 1; 	//distribution of injected particle with respect to the duration, constant 1 means uniform
+            massTotal       0; 		//total mass to inject
+            SOI 0; 				//injection start time
+            duration 60; 			//overall time of injection
+        }
+
+        model2
+        {
+            type            patchInjection;
+            parcelBasisType fixed;
+            patchName       upperInlet;
+            U0              (28.28427 -28.28427 0);
+            nParticle       1;
+            parcelsPerSecond 1000000;
+            sizeDistribution
+            {
+                type        normal;
+                normalDistribution
+                {
+                    expectation 600e-6;
+                    variance 100e-6;
+                    minValue 200e-6;
+                    maxValue 900e-6;
+                }
+            }
+            flowRateProfile constant 1;
+            massTotal       0;
+            SOI 0;
+            duration 60;
+        }
+    }
+
+    dispersionModel none;
+
+    patchInteractionModel localInteraction; 	//localInteraction for patch-by-patch interaction specification
+
+    localInteractionCoeffs 			//patch interaction definition
+    {
+        patches
+        (
+            frontAndBack
+            {
+                type rebound; 		//simple rebound
+                e    1; 			//elasticity coefficient ("percentage" dissipation in normal direction)
+                mu   0; 			//restitution coefficient (dissipation in tangential direction)
+            }
+
+            walls
+            {
+                type rebound;
+                e    1;
+                mu   0;
+            }
+
+            "lowerInlet|upperInlet|outlet"
+            {
+                type escape; 			//for outlet patches
+            }
+        );
+    }
+
+    heatTransferModel none;
+
+    surfaceFilmModel none;
+
+    packingModel none;
+
+    dampingModel relaxation;
+
+    relaxationCoeffs 				//model for collision damping time of particle velocity fluctuation
+    {
+        timeScaleModel
+        {
+            type nonEquilibrium;
+            alphaPacked 0.58;
+            e 0.9;
+        }
+    }
+
+    isotropyModel stochastic; 	//collision term that causes velocity distributions to relax to isotropic Gaussian distributions
+
+    stochasticCoeffs
+    {
+        timeScaleModel
+        {
+            type isotropic; 		//for the time scale over which the velocity field of a dispersed phase tends towards an isotropic distribution
+            alphaPacked 0.58; 	//close pack volume fraction
+            e 0.9; //coefficient of restitution
+        }
+    }
+
+    stochasticCollisionModel none;
+
+    radiation off;
+}
+
+
+cloudFunctions
+{}
+
+
+// ************************************************************************* //
